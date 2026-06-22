@@ -1,4 +1,3 @@
-
 package com.back.domain.member.member.controller;
 
 
@@ -25,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class ApiV1MemberController {
     private final MemberService memberService;
 
+
     public record MemberJoinReqBody(
             @NotBlank
             @Size(min = 2, max = 30)
@@ -48,6 +48,7 @@ public class ApiV1MemberController {
                 reqBody.password(),
                 reqBody.nickname()
         );
+
         return new RsData<>(
                 "201-1",
                 "%s님 환영합니다. 회원가입이 완료되었습니다.".formatted(member.getName()),
@@ -56,6 +57,39 @@ public class ApiV1MemberController {
     }
 
 
+    public record MemberLoginReqBody(
+            @NotBlank
+            @Size(min = 2, max = 30)
+            String username,
+            @NotBlank
+            @Size(min = 2, max = 30)
+            String password
+    ) {
+    }
 
+    public record MemberLoginResBody(
+            MemberDto item,
+            String apiKey
+    ) {
+    }
 
+    @PostMapping("/login")
+    public RsData<MemberLoginResBody> login(
+            @RequestBody @Valid MemberLoginReqBody reqBody
+    ) {
+        Member member = memberService.findByUsername(reqBody.username())
+                .orElseThrow(() -> new ServiceException("401-1", "존재하지 않는 아이디입니다."));
+
+        if (!member.getPassword().equals(reqBody.password()))
+            throw new ServiceException("401-2", "비밀번호가 일치하지 않습니다.");
+
+        return new RsData<>(
+                "200-1",
+                "%s님 환영합니다.".formatted(member.getName()),
+                new MemberLoginResBody(
+                        new MemberDto(member),
+                        member.getApiKey()
+                )
+        );
+    }
 }
